@@ -1,6 +1,7 @@
 import os
 from typing import Optional, List
-from src.templates import template_process,permissible_nodes_to_extract
+from openai import OpenAI
+from templates import template_process,permissible_nodes_to_extract
 from models.passage import Passage
 from models.ai_answer import AI_answer
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain_mistralai import ChatMistralAI
 from langchain.chains.openai_functions import create_structured_output_runnable
+from langchain_core.runnables import RunnablePassthrough
 
 
 # AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
@@ -23,7 +25,7 @@ AI_URL = "https://api.deepseek.com/v1"
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
 
-engine = create_engine("mysql+pymysql://root:root@localhost:3306/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:Sztu2024!@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 model_name = input("input the model name: ")
@@ -35,7 +37,6 @@ elif model_name == "GPT4":
     llm = ChatOpenAI(model="gpt-4", temperature=0)
 elif model_name == "deepseek":
     llm = ChatOpenAI(model="deepseek-chat", temperature=0)
-
 @contextmanager
 def scoped_session():
         db_session = Session()
@@ -65,17 +66,18 @@ def format_processes(processes: List[Process]) -> str:
         output += f"solution:{process.solution}\n"
         output += f"relationship:{process.relationship}\n\n"
     return output
-
+ 
 
 contents_id=int(input("input the id of the content: "))
 chain = create_structured_output_runnable(Data, llm, prompt)
 with scoped_session() as conn:
-    contents=conn.query(AI_answer.content).offset(contents_id-1).limit(1).all()
+    contents=conn.query(Passage.content).offset(contents_id-1).limit(1).all()
     content = contents[0][0] if contents else None
 
 if content:
-   runnable = prompt | llm.with_structured_output(schema=Data)
-   output_parser=runnable.invoke({"input": content,"permissible_nodes_to_extract": permissible_nodes_to_extract})
-   print(output_parser)
+    output_parser = StrOutputParser()
+    runnable = prompt | llm.with_structured_output(schema=Data)
+    response = runnable.invoke({"input":content,"permissible_nodes":permissible_nodes_to_extract})
+    print(response)
 else:
     print("No content found for the specified id.")

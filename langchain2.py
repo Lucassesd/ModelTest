@@ -2,7 +2,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from models.passage import Passage
 from models.ai_answer import AI_answer
-from src.templates import (
+from templates import (
     template_output,
     example_question,
     example_feature,
@@ -25,7 +25,7 @@ AI_URL = "https://api.chatanywhere.tech/v1"
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
 
-engine = create_engine("mysql+pymysql://root:root@localhost:3306/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:root@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-16k", temperature=0)

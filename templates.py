@@ -160,7 +160,7 @@ template_process=[(
             "Permissible Relationship Types**: If there are specific allowed relationship types, list them here.",
         ),  
         ("human", "Use the given format to extract information from the following input: {input}"),
-        ("human","Use the given permissible_nodes_to_extract to help you fine nodes: {permissible_nodes_to_extract}"),
+        ("human","Use the given permissible_nodes_to_extract to help you fine nodes: {permissible_nodes}"),
         ("human","Managing Numerical Data and Dates:Integrate numerical information directly as attributes of nodes."
         "Integrated Dates/Numbers**: Refrain from creating distinct nodes for dates or numbers, attaching them instead as attributes."
         "Format for Properties**: Use a key-value pairing format."
