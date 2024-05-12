@@ -13,8 +13,12 @@ from langchain_openai import ChatOpenAI
 from langchain_mistralai import ChatMistralAI
 from langchain.chains.openai_functions import create_structured_output_runnable
 
-AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
-AI_URL = "https://api.chatanywhere.tech/v1"
+
+# AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
+# AI_URL = "https://api.chatanywhere.tech/v1"
+
+AI_KEY = "sk-33ed26e61471401ba1cf2899e855bcec"
+AI_URL = "https://api.deepseek.com/v1"
 
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
@@ -29,6 +33,8 @@ elif model_name == "GPT3":
     llm = ChatOpenAI(model="gpt-3.5-turbo-16k", temperature=0)
 elif model_name == "GPT4":
     llm = ChatOpenAI(model="gpt-4", temperature=0)
+elif model_name == "deepseek":
+    llm = ChatOpenAI(model="deepseek-chat", temperature=0)
 
 @contextmanager
 def scoped_session():

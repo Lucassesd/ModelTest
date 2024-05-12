@@ -1,17 +1,17 @@
 import os
 from openai import OpenAI
 
-AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
-AI_URL = "https://api.chatanywhere.tech/v1"
+AI_KEY = "sk-33ed26e61471401ba1cf2899e855bcec"
+AI_URL = "https://api.deepseek.com/v1"
 
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_BASE_URL"] = AI_URL
 
-client = OpenAI()
+client = OpenAI(base_url=AI_URL)
  
 assistant = client.beta.assistants.create(
   instructions="You are a weather bot. Use the provided functions to answer questions.",
-  model="gpt-3.5",
+  model="deepseek-chat",
   tools=[
     {
       "type": "function",
