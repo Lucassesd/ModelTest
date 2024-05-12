@@ -1,6 +1,6 @@
 from typing_extensions import override
 from openai import AssistantEventHandler
-from Assistant import client, assistant, thread
+from src.Assistant import client, assistant, thread
 
 class EventHandler(AssistantEventHandler):
     @override

@@ -1,6 +1,6 @@
 import os
 from typing import Optional, List
-from templates import template_process,permissible_nodes_to_extract
+from src.templates import template_process,permissible_nodes_to_extract
 from models.passage import Passage
 from models.ai_answer import AI_answer
 from contextlib import contextmanager

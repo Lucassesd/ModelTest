@@ -2,7 +2,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
 from models.passage import Passage
 from models.ai_answer import AI_answer
-from templates import (
+from src.templates import (
     template_output,
     example_question,
     example_feature,
