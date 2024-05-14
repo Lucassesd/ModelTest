@@ -19,8 +19,8 @@ from langchain_core.runnables import RunnablePassthrough
 # AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 # AI_URL = "https://api.chatanywhere.tech/v1"
 
-AI_KEY = "sk-33ed26e61471401ba1cf2899e855bcec"
-AI_URL = "https://api.deepseek.com/v1"
+AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
+AI_URL = "https://api.chatanywhere.tech/v1"
 
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
@@ -71,7 +71,7 @@ def format_processes(processes: List[Process]) -> str:
 contents_id=int(input("input the id of the content: "))
 chain = create_structured_output_runnable(Data, llm, prompt)
 with scoped_session() as conn:
-    contents=conn.query(Passage.content).offset(contents_id-1).limit(1).all()
+    contents=conn.query(AI_answer.content).offset(contents_id-1).limit(1).all()
     content = contents[0][0] if contents else None
 
 if content:

@@ -202,3 +202,8 @@ permissible_nodes_to_extract = [
     "Webresource",
     "Website"
 ]
+
+template_relation="""
+"system",
+
+"""
