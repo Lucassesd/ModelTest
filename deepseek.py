@@ -1,7 +1,7 @@
 import json
 from openai import OpenAI
 from openai import OpenAI
-from templates import permissible_nodes_to_extract
+from templates import Examples_of_entities
 from models.ai_answer import AI_answer
 from contextlib import contextmanager
 from sqlalchemy import create_engine
@@ -27,32 +27,28 @@ if content:
     model="deepseek-chat",
     messages=[
         {"role": "system", "content":
-            "You are engineered for organising data into knowledge graphs."
+            "You will be designed to extract entities from information and apply them to the knowledge graph."
             "You are an expert extraction algorithm. "
             "Only extract relevant information from the text. "
             "If you do not know the value of an attribute asked to extract, "
             "return null for the attribute's value."
-            "Nodes: Represent entities and ideas."
+            "Use the entity examples provided to help you find entities"
             "The objective is to ensure the knowledge graph is straightforward and intelligible for broad use."
-            "Uniformity: Stick to simple labels for nodes. For instance, label any entity that is an organisation as 'company', rather than using terms like 'Facebook' or 'Amazon'."
-            "Identifiers for Nodes: Opt for textual or comprehensible identifiers over numerical ones."
-            "Permissible Node Labels**: If there are specific allowed node labels, list them here."
-            "Permissible Relationship Types**: If there are specific allowed relationship types, list them here."
         },
         {"role": "user", "content":content},
-        {"role": "user","content": "Use the given permissible_nodes_to_extract to help you fine nodes","permissible_nodes":permissible_nodes_to_extract},
+        {"role": "user","content":Examples_of_entities},
         
         {"role": "assitant", "content": "Use the given format to extract information from the following input."
-        "Managing Numerical Data and Dates:Integrate numerical information directly as attributes of nodes."
-        "Integrated Dates/Numbers**: Refrain from creating distinct nodes for dates or numbers, attaching them instead as attributes."
-        "Format for Properties**: Use a key-value pairing format."
-        "Avoiding Quotation Marks**: Do not use escaped quotes within property values."
-        "Key Naming**: Adopt camelCase for naming keys, such as `dateTime`."
-        "Uniformity:Entity Uniformity: Ensure consistent identification for entities across various mentions or references."
-        "Adherence to Guidelines:Strict adherence to these instructions is mandatory. Non-adherence will result in termination."
-        "Tip: Make sure to answer in the correct format"
-        "question must be correctly formatted,question_detail must be correctly formatted,keywords must be correctly formatted,solution must be correctly formatted,relationship must be correctly formatted"
-        "must use chinese characters to describe the content."}
+        "Numerical information is directly integrated as attributes of entities."
+         "Avoid creating different nodes for dates or numbers, and instead attach them as attributes."
+         "Don't use escape quotes in property values."
+         "Use camel case for keys, such as' dateTime '."
+         "Entity consistency: Ensures consistent identification of entities across various mentions or references."
+         "Strict adherence to these guidelines is mandatory. Failure to comply will result in dismissal."
+         "The attributes of the entity must not be omitted.Attributes must be detailed."
+         "The attributes of an entity must be sought based on the provided information without any omission, the attributes can be problem solutions, error messages, names, etc."
+         "Opt for textual or comprehensible identifiers over numerical ones."
+         "Make sure to answer in the correct format."}
         
         
   ],
