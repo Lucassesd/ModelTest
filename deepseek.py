@@ -3,6 +3,7 @@ from openai import OpenAI
 from openai import OpenAI
 from templates import Examples_of_entities
 from models.ai_answer import AI_answer
+from models.passage import Passage
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -20,38 +21,46 @@ def scoped_session():
 client = OpenAI(api_key="sk-33ed26e61471401ba1cf2899e855bcec", base_url="https://api.deepseek.com/v1")
 contents_id=int(input("input the id of the content: "))
 with scoped_session() as conn:
-    contents=conn.query(AI_answer.content).offset(contents_id-1).limit(1).all()
+    contents=conn.query(Passage.content).offset(contents_id-1).limit(1).all()
     content = contents[0][0] if contents else None
 if content:
   response = client.chat.completions.create(
     model="deepseek-chat",
-    messages=[
-        {"role": "system", "content":
-            "You will be designed to extract entities from information and apply them to the knowledge graph."
+    messages = [
+    {
+        "role": "system",
+        "content": (
+            "You will be designed to extract entities from information and apply them to the knowledge graph. "
             "You are an expert extraction algorithm. "
             "Only extract relevant information from the text. "
             "If you do not know the value of an attribute asked to extract, "
-            "return null for the attribute's value."
-            "Use the entity examples provided to help you find entities"
+            "return null for the attribute's value. "
+            "Use the entity examples provided to help you find entities. "
             "The objective is to ensure the knowledge graph is straightforward and intelligible for broad use."
-        },
-        {"role": "user", "content":content},
-        {"role": "user","content":Examples_of_entities},
-        
-        {"role": "assitant", "content": "Use the given format to extract information from the following input."
-        "Numerical information is directly integrated as attributes of entities."
-         "Avoid creating different nodes for dates or numbers, and instead attach them as attributes."
-         "Don't use escape quotes in property values."
-         "Use camel case for keys, such as' dateTime '."
-         "Entity consistency: Ensures consistent identification of entities across various mentions or references."
-         "Strict adherence to these guidelines is mandatory. Failure to comply will result in dismissal."
-         "The attributes of the entity must not be omitted.Attributes must be detailed."
-         "The attributes of an entity must be sought based on the provided information without any omission, the attributes can be problem solutions, error messages, names, etc."
-         "Opt for textual or comprehensible identifiers over numerical ones."
-         "Make sure to answer in the correct format."}
-        
-        
-  ],
+        )
+    },
+    {
+        "role": "user",
+        "content": content
+    },
+    {
+        "role": "assistant",
+        "content": (
+            "Use the given format to extract information from the following input. "
+            "Numerical information is directly integrated as attributes of entities. "
+            "Avoid creating different nodes for dates or numbers, and instead attach them as attributes. "
+            "Don't use escape quotes in property values. "
+            "Use camel case for keys, such as 'dateTime'. "
+            "Entity consistency: Ensures consistent identification of entities across various mentions or references. "
+            "Strict adherence to these guidelines is mandatory. Failure to comply will result in dismissal. "
+            "The attributes of the entity must not be omitted. Attributes must be detailed. "
+            "The attributes of an entity must be sought based on the provided information without any omission; the attributes can be problem solutions, error messages, names, etc. "
+            "Opt for textual or comprehensible identifiers over numerical ones. "
+            "Make sure to answer in the correct format."
+            "Describe in Chinese"
+        )
+    }
+],
     max_tokens=1024,
     temperature=0,
     stream=False

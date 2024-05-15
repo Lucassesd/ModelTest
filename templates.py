@@ -148,7 +148,7 @@ template_output = """
 template_process=[(
             "system",
             "You will be designed to extract entities from information and apply them to the knowledge graph."
-            "You are an expert extraction algorithm. "
+            "You are an expert extraction algorithm."
             "Only extract relevant information from the text. "
             "If you do not know the value of an attribute asked to extract, "
             "return null for the attribute's value."
@@ -199,7 +199,16 @@ Examples_of_entities = [
     "Website"
 ]
 
-template_relation="""
-"system",
-
-"""
+template_relation=[(
+    "system",
+    "You are designed to analyze relationships between entities and chain entities together to build a knowledge graph."
+    "When you analyze relationships between entities, be sure to be precise and detailed."
+    "Relationships must be expressed as' entities -> relationships between them -> entities'"
+),
+("human", "Use the given format to analyze relationships between entities:{runnable}"),
+("human", "The relationships between entities must be detailed and precise. Be sure to include all relevant information."),
+("human", "Tip: Make sure to answer in the correct format."
+          "Describe in Chinese."
+          "No entity should be left out."
+)
+]
