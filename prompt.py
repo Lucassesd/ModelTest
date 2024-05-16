@@ -1,8 +1,10 @@
 import os
+import numpy as np
 from typing import Optional, List
 from openai import OpenAI
 from templates import template_process,Examples_of_entities,template_relation
 from models.passage import Passage
+from sklearn.cluster import KMeans
 from models.ai_answer import AI_answer
 from contextlib import contextmanager
 from sqlalchemy import create_engine
@@ -11,6 +13,7 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain_mistralai import ChatMistralAI
 from langchain.chains.openai_functions import create_structured_output_runnable
 
@@ -53,40 +56,62 @@ class Relation(BaseModel):
 prompt_entity = ChatPromptTemplate.from_messages(template_process)
 prompt_relation=ChatPromptTemplate.from_messages(template_relation)
 
-def format_processes(processes: List[Process]) -> str:
-    output = ""
+def format_processes(processes: List[Process]) -> List[str]:
+    entities = []
     for index, process in enumerate(processes, start=1):
-        output += f"Entity:{index}: {process.Entity}\n"
-        output += f"Entity_attributes:{process.Attributes}\n\n"
-    return output
+        entity = f"Entity:{index}: {process.Entity}"
+        attributes = f"Entity_attributes:{process.Attributes}"
+        entities.append((entity, attributes))
+    return entities
 
-def format_relation(relation):
-    formatted_relation = ""
-    lines = relation.strip().split('\n\n')
-    
-    for line in lines:
-        formatted_relation += "\n" + line.strip() + "\n\n"
 
-    formatted_relation = formatted_relation.replace("\n", "<br>")
-    formatted_relation = formatted_relation.replace("Process", "<strong>Process</strong>")
-    formatted_relation = formatted_relation.replace("has the attributes", "<strong>has the attributes</strong>")
-    formatted_relation = formatted_relation.replace("has the attribute", "<strong>has the attribute</strong>")
-    
-    return formatted_relation.strip()
-
-contents_id=int(input("input the id of the content: "))
-with scoped_session() as conn:
-    contents=conn.query(Passage.content).offset(contents_id-1).limit(1).all()
-    content = contents[0][0] if contents else None
-
-if content:
+def extract_entities_from_text(content):
     output_parser = StrOutputParser()
     runnable = create_structured_output_runnable(Data, llm, prompt_entity)
-    relation=create_structured_output_runnable(Relation,llm,prompt_relation)
-    result=runnable|relation
-    entity=runnable.invoke({"input":content,"Examples_of_entities":Examples_of_entities})
-    relation = result.invoke({"input":content,"Examples_of_entities":Examples_of_entities})
-    output_entity= format_processes(entity.process)
-    print(relation)
-else:
-    print("No content found for the specified id.")
+    entity = runnable.invoke({"input": content, "Examples_of_entities": Examples_of_entities})
+    entities = format_processes(entity.process)
+    return entities
+
+def cluster_entities(contents):
+    all_entities = []
+    for content in contents:
+        entities = extract_entities_from_text(content)
+        all_entities.extend(entities)
+
+    embeddings_model = OpenAIEmbeddings()
+    embedded_entities = []
+    entity_texts = []
+
+    for entity, _ in all_entities:
+        embedded_vector = embeddings_model.embed_query(entity)
+        embedded_entities.append(embedded_vector)
+        entity_texts.append(entity)
+
+    embedded_entities = np.array(embedded_entities)
+
+    # 使用K-Means聚类
+    num_clusters = len(all_entities)  # 聚类数量等于所有实体数量
+    kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embedded_entities)
+
+    # 获取每个嵌入向量的聚类标签
+    labels = kmeans.labels_
+
+    clusters = {}
+    for label, entity in zip(labels, entity_texts):
+        if label not in clusters:
+            clusters[label] = []
+        clusters[label].append(entity)
+
+    for cluster, entities in clusters.items():
+        print(f"Cluster {cluster}: {entities}")
+
+content_ids = input("Input the IDs of the content (separate IDs by space): ").split()
+contents = []
+with scoped_session() as conn:
+    for content_id in content_ids:
+        result = conn.query(Passage.content).offset(int(content_id) - 1).limit(1).all()
+        content = result[0][0] if result else None
+        if content:
+            contents.append(content)
+
+cluster_entities(contents)

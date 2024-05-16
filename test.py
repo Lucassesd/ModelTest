@@ -1,18 +1,12 @@
-import re
+from langchain_openai import OpenAIEmbeddings
+import os
 
-# 假设日志文件名为 log.txt
-log_file = 'c:\\Users\\CJH\\Desktop\\result_hdfs_1T_parquet_tez.log'
 
-# 读取日志文件内容
-with open(log_file, 'r') as file:
-    log_content = file.read()
+AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
+AI_URL = "https://api.chatanywhere.tech/v1"
 
-# 定义正则表达式模式，匹配日期和时间格式
-pattern = r"endTime:(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})"
-
-# 使用 re.search 查找第一个匹配的时间戳
-timestamps = re.findall(pattern, log_content)
-
-# 如果找到匹配项，提取时间戳
-for timestamp in timestamps:
-    print(timestamp)
+os.environ["OPENAI_API_KEY"] = AI_KEY
+os.environ["OPENAI_API_BASE"] = AI_URL
+embeddings_model = OpenAIEmbeddings()
+embedded_query = embeddings_model.embed_query("What was the name mentioned in the conversation?")
+print(embedded_query[:6])
