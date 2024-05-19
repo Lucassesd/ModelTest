@@ -9,6 +9,7 @@ from models.ai_answer import AI_answer
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from templates import relationships
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
@@ -22,7 +23,7 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "root"
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 graph = Neo4jGraph()
 
@@ -57,8 +58,8 @@ with scoped_session() as conn:
             
 llm_transformer_filtered = LLMGraphTransformer(
     llm=llm,
-    allowed_nodes=["Characteristics of the problem", "problem", "Analysis of problem","solution"],
-    allowed_relationships=["HAS_CHARACTERISTIC", "ANALYZES", "ADDRESSES", "RESULTS_FROM"],
+    allowed_nodes=["Characteristics of the Question", "Question", "Analysis of Question","solution"],
+    allowed_relationships=relationships,
     node_properties=True,
 )
 documents=[Document(page_content=content[0][0])]

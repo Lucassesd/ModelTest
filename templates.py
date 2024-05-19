@@ -217,18 +217,4 @@ template_relation=[(
 )
 ]
 
-template_test="""
-目的:总结出文章的摘要
-
-步骤:
-1.总结文章摘要
-
-输出格式:
-只输出文章的摘要
-
-规则:
-1.输出的内容必须是原文的摘要，不能生成，不能用文字总结
-
-信息:
-原文:{passage}
-"""
+relationships=["DEFINES", "EXPLORES", "SOLVES", "DERIVES_FROM", "IDENTIFIES", "ANALYZES_CAUSES", "EVALUATES_OPTIONS", "PRIORITIZES_ISSUES", "GENERATES_HYPOTHESES", "VALIDATES_FINDINGS","IMPLEMENTATION_DETAILS", "EVALUATES_EFFECTIVENESS", "ADAPTS_FROM", "ADJUSTS_PARAMETERS", "REFINES_APPROACH", "APPLIES_TO_SCENARIO"]
