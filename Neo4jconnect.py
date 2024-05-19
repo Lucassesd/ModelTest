@@ -58,7 +58,7 @@ with scoped_session() as conn:
             
 llm_transformer_filtered = LLMGraphTransformer(
     llm=llm,
-    allowed_nodes=["Characteristics of the Question", "Question", "Analysis of Question","solution"],
+    allowed_nodes = ["Characteristics of the Question", "Question", "Analysis of Question", "Solution"],
     allowed_relationships=relationships,
     node_properties=True,
 )
