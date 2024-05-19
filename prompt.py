@@ -16,7 +16,14 @@ from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain_mistralai import ChatMistralAI
 from langchain.chains.openai_functions import create_structured_output_runnable
+from langchain_experimental.graph_transformers import LLMGraphTransformer
+from langchain_community.graphs import Neo4jGraph
 
+os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "root"
+
+graph = Neo4jGraph()
 
 # AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 # AI_URL = "https://api.chatanywhere.tech/v1"
@@ -37,6 +44,8 @@ elif model_name == "GPT3":
     llm = ChatOpenAI(model="gpt-3.5-turbo-16k", temperature=0)
 elif model_name == "GPT4":
     llm = ChatOpenAI(model="gpt-4", temperature=0)
+    
+llm_transformer = LLMGraphTransformer(llm=llm)
 @contextmanager
 def scoped_session():
         db_session = Session()
@@ -82,16 +91,16 @@ def cluster_entities(contents):
     embedded_entities = []
     entity_texts = []
 
-    for entity, _ in all_entities:
-        embedded_vector = embeddings_model.embed_query(entity)
+    for entity, attributes in all_entities:
+        combined_text = f"{entity} {attributes}"
+        embedded_vector = embeddings_model.embed_query(combined_text)
         embedded_entities.append(embedded_vector)
-        entity_texts.append(entity)
+        entity_texts.append(combined_text)
 
     embedded_entities = np.array(embedded_entities)
 
     # 使用K-Means聚类
-    num_clusters = len(all_entities)  # 聚类数量等于所有实体数量
-    kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embedded_entities)
+    kmeans = KMeans(n_clusters=3, random_state=0).fit(embedded_entities)  
 
     # 获取每个嵌入向量的聚类标签
     labels = kmeans.labels_
@@ -103,7 +112,10 @@ def cluster_entities(contents):
         clusters[label].append(entity)
 
     for cluster, entities in clusters.items():
-        print(f"Cluster {cluster}: {entities}")
+        print(f"Cluster {cluster}: {entities}\n")
+    relation=create_structured_output_runnable(Relation, llm, prompt_relation)
+    relationship=relation.invoke({"clusters":clusters})
+    print(relationship)
 
 content_ids = input("Input the IDs of the content (separate IDs by space): ").split()
 contents = []

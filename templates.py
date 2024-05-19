@@ -203,12 +203,32 @@ template_relation=[(
     "system",
     "You are designed to analyze relationships between entities and chain entities together to build a knowledge graph."
     "When you analyze relationships between entities, be sure to be precise and detailed."
-    "Relationships must be expressed as' entities -> relationships between them -> entities'"
+    "Analyze from the cluster, which entities are highly similar, and find out the connection between the entities with high similarity."
+    "You must specify which entity, for example :'facebook'"
+    "You must explain why they are relevant."
 ),
-("human", "Use the given format to analyze relationships between entities:{runnable}"),
+("human", "Use the given format to analyze relationships between entities:{clusters}"),
 ("human", "The relationships between entities must be detailed and precise. Be sure to include all relevant information."),
 ("human", "Tip: Make sure to answer in the correct format."
           "Describe in Chinese."
           "No entity should be left out."
+          "Be sure to write what is the connection between the entities."
+          "Cannot output attribute."
 )
 ]
+
+template_test="""
+目的:总结出文章的摘要
+
+步骤:
+1.总结文章摘要
+
+输出格式:
+只输出文章的摘要
+
+规则:
+1.输出的内容必须是原文的摘要，不能生成，不能用文字总结
+
+信息:
+原文:{passage}
+"""
