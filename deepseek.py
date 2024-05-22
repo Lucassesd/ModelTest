@@ -21,7 +21,7 @@ def scoped_session():
 client = OpenAI(api_key="sk-33ed26e61471401ba1cf2899e855bcec", base_url="https://api.deepseek.com/v1")
 contents_id=int(input("input the id of the content: "))
 with scoped_session() as conn:
-    contents=conn.query(Passage.content).offset(contents_id-1).limit(1).all()
+    contents=conn.query(AI_answer.content).offset(contents_id-1).limit(1).all()
     content = contents[0][0] if contents else None
 if content:
   response = client.chat.completions.create(

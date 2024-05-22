@@ -54,7 +54,7 @@ def scoped_session():
 
 content_id = input("Input the IDs of the content (separate IDs by space): ")
 with scoped_session() as conn:
-    content=conn.query(Passage.content).offset(int(content_id)-1).limit(1).all()
+    content=conn.query(AI_answer.content).offset(int(content_id)-1).limit(1).all()
             
 llm_transformer_filtered = LLMGraphTransformer(
     llm=llm,

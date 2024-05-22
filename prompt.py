@@ -19,12 +19,6 @@ from langchain.chains.openai_functions import create_structured_output_runnable
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_community.graphs import Neo4jGraph
 
-os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "root"
-
-graph = Neo4jGraph()
-
 # AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 # AI_URL = "https://api.chatanywhere.tech/v1"
 
