@@ -30,9 +30,9 @@ from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_community.graphs import Neo4jGraph
 
 # 配置环境变量
-os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "skf707=="
+# os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+# os.environ["NEO4J_USERNAME"] = "neo4j"
+# os.environ["NEO4J_PASSWORD"] = "skf707=="
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
 
@@ -40,11 +40,11 @@ os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
 
 # 连接 Neo4j
-graph = Neo4jGraph()
+# graph = Neo4jGraph()
 
 # 配置数据库连接
 
-engine = create_engine("mysql+pymysql://root:Sztu2024!@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:root@localhost:3306/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 # 配置 LLM
@@ -85,10 +85,12 @@ def format_processes(processes: List[Process]) -> List[str]:
 def extract_entities_from_text(content):
     output_parser = StrOutputParser()
     runnable = create_structured_output_runnable(Data, llm, prompt_entity)
+    relation= create_structured_output_runnable(Relation, llm, prompt_relation)
     entity = runnable.invoke({"input": content})
     entities = format_processes(entity.process)
-    print(entities)
-    return entities
+    relationship=runnable | relation
+    entity_relation=relationship.invoke({"entities":entities,"input":content})
+    print(entities,"\n\n\n",entity_relation)
 
 # 从数据库中提取内容
 content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
@@ -99,13 +101,7 @@ with scoped_session() as conn:
         if content:
             contents.append(content[0][0])
 
-def create_graph_entities(entities):  
-    relation=create_structured_output_runnable(Relation, llm, prompt_relation)
-    relationship=relation.invoke({"put1":entities})
-    print(relationship)
-    return relationship
 
 # 提取实体并创建图结构
 for content in contents:
-    entities = extract_entities_from_text(content)
-    create_graph_entities(entities)
+    extract_entities_from_text(content)
