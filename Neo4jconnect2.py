@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+import re
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
@@ -7,32 +7,26 @@ from models.passage import Passage
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_community.graphs import Neo4jGraph
-import openai
-import os
-import numpy as np
-from typing import Optional, List
-from openai import OpenAI
-from templates3 import template_process,template_relation
+from langchain_core.prompts import ChatPromptTemplate
+from templates3 import prompt
 from models.passage import Passage
-from sklearn.cluster import KMeans
-from models.ai_answer import AI_answer
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
+from langchain.graphs.graph_document import (
+    Node as BaseNode,
+    Relationship as BaseRelationship
+)
+from typing import List,Optional
+from langchain.pydantic_v1 import Field, BaseModel
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from langchain_mistralai import ChatMistralAI
 from langchain.chains.openai_functions import create_structured_output_runnable
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_community.graphs import Neo4jGraph
 
-# 配置环境变量
-# os.environ["NEO4J_URI"] = "bolt://localhost:7687"
-# os.environ["NEO4J_USERNAME"] = "neo4j"
-# os.environ["NEO4J_PASSWORD"] = "skf707=="
+os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
 
@@ -55,16 +49,29 @@ elif model_name == "GPT4":
     llm = ChatOpenAI(model="gpt-4", temperature=0)
 else:
     raise ValueError("Unsupported model name. Choose 'GPT3' or 'GPT4'.")
-class Process(BaseModel):
-    Entity: Optional[str] = Field(default=None, description="The entity in the process")
-    Attributes: Optional[str] = Field(default=None, description="The attributes of the entity")
-class Data(BaseModel):
-    process: List[Process]
 
-class Relation(BaseModel):
-    relationship:Optional[str] = Field(default=None,description="The relationship between the entities")
-prompt_entity = ChatPromptTemplate.from_messages(template_process)
-prompt_relation=ChatPromptTemplate.from_messages(template_relation)
+class Property(BaseModel):
+  """A single property consisting of key and value"""
+  key: str = Field(..., description="key")
+  value: str = Field(..., description="value")
+
+class Node(BaseNode):
+    properties: Optional[List[Property]] = Field(
+        None, description="List of node properties")
+
+class Relationship(BaseRelationship):
+    properties: Optional[List[Property]] = Field(
+        None, description="List of relationship properties"
+    )
+
+class KnowledgeGraph(BaseModel):
+    """Generate a knowledge graph with entities and relationships."""
+    nodes: List[Node] = Field(
+        ..., description="List of nodes in the knowledge graph")
+    rels: List[Relationship] = Field(
+        ..., description="List of relationships in the knowledge graph"
+    )
+prompt_graph = ChatPromptTemplate.from_messages(prompt)
 
 @contextmanager
 def scoped_session():
@@ -74,23 +81,29 @@ def scoped_session():
     finally:
         db_session.close()
 
-def format_processes(processes: List[Process]) -> List[str]:
-    entities = []
-    for index, process in enumerate(processes, start=1):
-        entity = f"Entity:{index}: {process.Entity}"
-        attributes = f"Entity_attributes:{process.Attributes}"
-        entities.append((entity, attributes))
-    return entities
+def nodes_to_string(nodes: List[Node]) -> str:
+    return ', '.join([f"Node(id='{node.id}', type='{node.type}', properties={node.properties})" for node in nodes])
 
-def extract_entities_from_text(content):
-    output_parser = StrOutputParser()
-    runnable = create_structured_output_runnable(Data, llm, prompt_entity)
-    relation= create_structured_output_runnable(Relation, llm, prompt_relation)
-    entity = runnable.invoke({"input": content})
-    entities = format_processes(entity.process)
-    relationship=runnable | relation
-    entity_relation=relationship.invoke({"entities":entities,"input":content})
-    print(entities,"\n\n\n",entity_relation)
+def rels_to_string(rels: List[Relationship]) -> str:
+    return ', '.join([
+        f"Relationship(source=Node(id='{rel.source.id}', type='{rel.source.type}'), "
+        f"target=Node(id='{rel.target.id}', type='{rel.target.type}'), type='{rel.type}', properties={rel.properties})"
+        for rel in rels
+    ])
+
+def extract_and_store_graph(content) -> None:
+    # Extract graph data using OpenAI functions
+    extract_chain = create_structured_output_runnable(KnowledgeGraph, llm, prompt_graph)
+    data = extract_chain.invoke({"input": content})
+
+    # Assuming data is an instance of KnowledgeGraph
+    if isinstance(data, KnowledgeGraph):
+        nodes_str = nodes_to_string(data.nodes)
+        rels_str = rels_to_string(data.rels)
+        print(nodes_str,"\n\n\n",rels_str)
+    else:
+        print("Data extraction failed")
+    
 
 # 从数据库中提取内容
 content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
@@ -101,7 +114,6 @@ with scoped_session() as conn:
         if content:
             contents.append(content[0][0])
 
-
-# 提取实体并创建图结构
 for content in contents:
-    extract_entities_from_text(content)
+    extract_and_store_graph(content)
+# 提取实体并创建图结构

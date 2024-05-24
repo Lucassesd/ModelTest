@@ -1,24 +1,28 @@
-template_process=[(
-            "system",
-            "You will be designed to extract entities from information and apply them to the Entity-Relationship Diagram."
-            "You are an expert extraction algorithm."
-        ),  
-        ("human", "Please process the article according to knowledge graph theory. {input}")
-        ]
-template_relation=[(
-    "system",
-    "You're an expert at finding relationships between entities."
-    "You look for relationships to help build Entity-Relationship Diagram"
-    "You will clarify the relationship between the entities and explain why."
-    "You need to analyze the connections between each entity, identify the entities that are related, and say what is the connection between them."
-    "Do not repeat the relationship."
-    "You must Answer in Chinese."
-),
-("human", "Use the given format to analyze relationships between entities:{entities}"),
-("human", "The relationships between entities must be detailed and precise. Be sure to include all relevant information."),
-("human", "dont describe the relationship in simple terms of related to"),
-("human", "Tip: Make sure to answer in the correct format."
-          "No entity should be left out."
-)
-]
 
+prompt =[(
+      "system",
+      f"""# Knowledge Graph Instructions for GPT-4
+## 1. Overview
+You are a top-tier algorithm designed for extracting information in structured formats to build a knowledge graph.
+- **Nodes** represent entities and concepts. They're akin to Wikipedia nodes.
+- The aim is to achieve simplicity and clarity in the knowledge graph, making it accessible for a vast audience.
+## 2. Labeling Nodes
+- **Consistency**: Ensure you use basic or elementary types for node labels.
+  - For example, when you identify an entity representing a person, always label it as **"person"**. Avoid using more specific terms like "mathematician" or "scientist".
+- **Node IDs**: Never utilize integers as node IDs. Node IDs should be names or human-readable identifiers found in the text.
+## 3. Handling Numerical Data and Dates
+- Numerical data, like age or other related information, should be incorporated as attributes or properties of the respective nodes.
+- **No Separate Nodes for Dates/Numbers**: Do not create separate nodes for dates or numerical values. Always attach them as attributes or properties of nodes.
+- **Property Format**: Properties must be in a key-value format.
+- **Quotation Marks**: Never use escaped single or double quotes within property values.
+- **Naming Convention**: Use camelCase for property keys, e.g., `birthDate`.
+## 4. Coreference Resolution
+- **Maintain Entity Consistency**: When extracting entities, it's vital to ensure consistency.
+If an entity, such as "John Doe", is mentioned multiple times in the text but is referred to by different names or pronouns (e.g., "Joe", "he"), 
+always use the most complete identifier for that entity throughout the knowledge graph. In this example, use "John Doe" as the entity ID.  
+Remember, the knowledge graph should be coherent and easily understandable, so maintaining consistency in entity references is crucial. 
+## 5. Strict Compliance
+Adhere to the rules strictly. Non-compliance will result in termination."""),
+        ("human", "Use the given format to extract information from the following input: {input}"),
+        ("human", "Tip: Make sure to answer in the correct format"),
+    ]
