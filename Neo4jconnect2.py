@@ -1,23 +1,18 @@
 import os
-import re
+from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from models.passage import Passage
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
-from langchain_community.graphs import Neo4jGraph
 from langchain_core.prompts import ChatPromptTemplate
-from templates3 import prompt
-from models.passage import Passage
-from contextlib import contextmanager
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from templates2 import prompt
 from langchain.graphs.graph_document import (
     Node as BaseNode,
     Relationship as BaseRelationship
 )
-from typing import List,Optional
+from typing import List, Optional
 from langchain.pydantic_v1 import Field, BaseModel
 from langchain_openai import ChatOpenAI
 from langchain.chains.openai_functions import create_structured_output_runnable
@@ -26,7 +21,8 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
+os.environ["NEO4J_PASSWORD"] = "skf707=="
+
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
 
@@ -34,11 +30,13 @@ os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
 
 # 连接 Neo4j
-# graph = Neo4jGraph()
+neo4j_driver = GraphDatabase.driver(
+    os.environ["NEO4J_URI"],
+    auth=(os.environ["NEO4J_USERNAME"], os.environ["NEO4J_PASSWORD"])
+)
 
 # 配置数据库连接
-
-engine = create_engine("mysql+pymysql://root:root@localhost:3306/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:Sztu2024!@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 # 配置 LLM
@@ -51,9 +49,9 @@ else:
     raise ValueError("Unsupported model name. Choose 'GPT3' or 'GPT4'.")
 
 class Property(BaseModel):
-  """A single property consisting of key and value"""
-  key: str = Field(..., description="key")
-  value: str = Field(..., description="value")
+    """A single property consisting of key and value"""
+    key: str = Field(..., description="key")
+    value: str = Field(..., description="value")
 
 class Node(BaseNode):
     properties: Optional[List[Property]] = Field(
@@ -71,6 +69,7 @@ class KnowledgeGraph(BaseModel):
     rels: List[Relationship] = Field(
         ..., description="List of relationships in the knowledge graph"
     )
+
 prompt_graph = ChatPromptTemplate.from_messages(prompt)
 
 @contextmanager
@@ -91,6 +90,40 @@ def rels_to_string(rels: List[Relationship]) -> str:
         for rel in rels
     ])
 
+def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
+    with neo4j_driver.session() as session:
+        # Insert nodes
+        for node in nodes:
+            node_props = {prop.key: prop.value for prop in (node.properties or [])}
+            prop_str = ", ".join([f"{k}: ${k}" for k in node_props.keys()])
+            if prop_str:
+                query = f"CREATE (n:{node.type} {{id: $id, {prop_str}}})"
+            else:
+                query = f"CREATE (n:{node.type} {{id: $id}})"
+            session.run(query, id=node.id, **node_props)
+
+        # Insert relationships
+        for rel in rels:
+            source_id = rel.source.id
+            target_id = rel.target.id
+            rel_props = {prop.key: prop.value for prop in (rel.properties or [])}
+            rel_prop_str = ", ".join([f"{k}: ${k}" for k in rel_props.keys()])
+            if rel_prop_str:
+                query = (
+                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
+                    f"CREATE (a)-[:{rel.type} {{ {rel_prop_str} }}]->(b)"
+                )
+            else:
+                query = (
+                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
+                    f"CREATE (a)-[:{rel.type}]->(b)"
+                )
+            session.run(query, source_id=source_id, target_id=target_id, **rel_props)
+
+def delete_all_nodes():
+    with neo4j_driver.session() as session:
+        session.run("MATCH (n) DETACH DELETE n")
+
 def extract_and_store_graph(content) -> None:
     # Extract graph data using OpenAI functions
     extract_chain = create_structured_output_runnable(KnowledgeGraph, llm, prompt_graph)
@@ -100,10 +133,16 @@ def extract_and_store_graph(content) -> None:
     if isinstance(data, KnowledgeGraph):
         nodes_str = nodes_to_string(data.nodes)
         rels_str = rels_to_string(data.rels)
-        print(nodes_str,"\n\n\n",rels_str)
+        
+        print(nodes_str, "\n\n\n", rels_str)
+
+        # Insert into Neo4j
+        insert_graph_to_neo4j(data.nodes, data.rels)
     else:
         print("Data extraction failed")
-    
+
+# 删除所有节点和关系
+delete_all_nodes()
 
 # 从数据库中提取内容
 content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
@@ -116,4 +155,6 @@ with scoped_session() as conn:
 
 for content in contents:
     extract_and_store_graph(content)
-# 提取实体并创建图结构
+
+# 关闭 Neo4j 驱动
+neo4j_driver.close()
