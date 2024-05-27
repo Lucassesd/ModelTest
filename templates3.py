@@ -14,6 +14,7 @@ You are a top-tier algorithm designed for extracting information in structured f
 - Numerical data, like age or other related information, should be incorporated as attributes or properties of the respective nodes.
 - **No Separate Nodes for Dates/Numbers**: Do not create separate nodes for dates or numerical values. Always attach them as attributes or properties of nodes.
 - **Property Format**: Properties must be in a key-value format.
+- **Contetnt Format**: The main content is contained in the "Content", don't write all of it in the "id".
 - **Quotation Marks**: Never use escaped single or double quotes within property values.
 - **Naming Convention**: Use camelCase for property keys, e.g., `birthDate`.
 ## 4. Coreference Resolution
