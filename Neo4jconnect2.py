@@ -36,7 +36,7 @@ neo4j_driver = GraphDatabase.driver(
 )
 
 # 配置数据库连接
-engine = create_engine("mysql+pymysql://root:root@localhost:3306/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:Sztu2024!@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 # 配置 LLM
