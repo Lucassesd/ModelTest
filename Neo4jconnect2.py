@@ -21,7 +21,7 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "skf707=="
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
@@ -96,10 +96,11 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
         for node in nodes:
             node_props = {prop.key: prop.value for prop in (node.properties or [])}
             prop_str = ", ".join([f"{k}: ${k}" for k in node_props.keys()])
+            node_type = node.type.replace(" ", "_")  # Replace spaces with underscores
             if prop_str:
-                query = f"CREATE (n:{node.type} {{id: $id, {prop_str}}})"
+                query = f"CREATE (n:{node_type} {{id: $id, {prop_str}}})"
             else:
-                query = f"CREATE (n:{node.type} {{id: $id}})"
+                query = f"CREATE (n:{node_type} {{id: $id}})"
             session.run(query, id=node.id, **node_props)
 
         # Insert relationships
@@ -108,17 +109,19 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
             target_id = rel.target.id
             rel_props = {prop.key: prop.value for prop in (rel.properties or [])}
             rel_prop_str = ", ".join([f"{k}: ${k}" for k in rel_props.keys()])
+            rel_type = rel.type.replace(" ", "_")  # Replace spaces with underscores
             if rel_prop_str:
                 query = (
                     f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
-                    f"CREATE (a)-[:{rel.type} {{ {rel_prop_str} }}]->(b)"
+                    f"CREATE (a)-[:{rel_type} {{ {rel_prop_str} }}]->(b)"
                 )
             else:
                 query = (
                     f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
-                    f"CREATE (a)-[:{rel.type}]->(b)"
+                    f"CREATE (a)-[:{rel_type}]->(b)"
                 )
             session.run(query, source_id=source_id, target_id=target_id, **rel_props)
+
 
 def delete_all_nodes():
     with neo4j_driver.session() as session:
@@ -135,26 +138,36 @@ def extract_and_store_graph(content) -> None:
         rels_str = rels_to_string(data.rels)
         
         print(nodes_str, "\n\n\n", rels_str)
-
-        # Insert into Neo4j
-        insert_graph_to_neo4j(data.nodes, data.rels)
+        return data.nodes, data.rels
     else:
         print("Data extraction failed")
+        return [], []
 
 # 删除所有节点和关系
 delete_all_nodes()
+
+def batch_process_contents(contents: List):
+    all_nodes = []
+    all_rels = []
+    
+    for content in contents:
+        nodes, rels = extract_and_store_graph(content)
+        all_nodes.extend(nodes)
+        all_rels.extend(rels)
+    
+    insert_graph_to_neo4j(all_nodes, all_rels)
 
 # 从数据库中提取内容
 content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
 contents = []
 with scoped_session() as conn:
     for content_id in content_ids:
-        content = conn.query(Passage.content).offset(int(content_id)-1).limit(1).all()
+        result = conn.query(Passage.content).offset(int(content_id) - 1).limit(1).all()
+        content = result[0][0] if result else None
         if content:
-            contents.append(content[0][0])
+            contents.append(content)
 
-for content in contents:
-    extract_and_store_graph(content)
+batch_process_contents(contents)
 
 # 关闭 Neo4j 驱动
 neo4j_driver.close()
