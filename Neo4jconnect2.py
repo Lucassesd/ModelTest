@@ -7,7 +7,7 @@ from models.passage import Passage
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from templates2 import prompt
+from templates3 import prompt
 from langchain.graphs.graph_document import (
     Node as BaseNode,
     Relationship as BaseRelationship
@@ -21,6 +21,7 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
@@ -90,6 +91,8 @@ def rels_to_string(rels: List[Relationship]) -> str:
         for rel in rels
     ])
 
+from typing import List
+
 def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
     with neo4j_driver.session() as session:
         # Insert nodes
@@ -121,6 +124,7 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
                     f"CREATE (a)-[:{rel_type}]->(b)"
                 )
             session.run(query, source_id=source_id, target_id=target_id, **rel_props)
+
 
 
 def delete_all_nodes():
