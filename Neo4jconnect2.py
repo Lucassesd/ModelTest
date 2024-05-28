@@ -7,7 +7,12 @@ from models.passage import Passage
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from templates3 import prompt
+from templates2 import prompt
+from langchain_chroma import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,
+)
 from langchain.graphs.graph_document import (
     Node as BaseNode,
     Relationship as BaseRelationship
@@ -115,17 +120,23 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
             rel_type = rel.type.replace(" ", "_")  # Replace spaces with underscores
             if rel_prop_str:
                 query = (
-                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
+                    "MATCH (a {id: $source_id}), (b {id: $target_id}) "
                     f"CREATE (a)-[:{rel_type} {{ {rel_prop_str} }}]->(b)"
                 )
             else:
                 query = (
-                    f"MATCH (a {{id: $source_id}}), (b {{id: $target_id}}) "
+                    "MATCH (a {id: $source_id}), (b {id: $target_id}) "
                     f"CREATE (a)-[:{rel_type}]->(b)"
                 )
             session.run(query, source_id=source_id, target_id=target_id, **rel_props)
 
 
+
+def split_text_into_chunks(text: str, chunk_size: int) -> List[str]:
+    chunks = []
+    for i in range(0, len(text), chunk_size):
+        chunks.append(text[i:i+chunk_size])
+    return chunks
 
 def delete_all_nodes():
     with neo4j_driver.session() as session:
@@ -142,24 +153,14 @@ def extract_and_store_graph(content) -> None:
         rels_str = rels_to_string(data.rels)
         
         print(nodes_str, "\n\n\n", rels_str)
-        return data.nodes, data.rels
+        insert_graph_to_neo4j(data.nodes, data.rels)
     else:
         print("Data extraction failed")
-        return [], []
+        
+
 
 # 删除所有节点和关系
 delete_all_nodes()
-
-def batch_process_contents(contents: List):
-    all_nodes = []
-    all_rels = []
-    
-    for content in contents:
-        nodes, rels = extract_and_store_graph(content)
-        all_nodes.extend(nodes)
-        all_rels.extend(rels)
-    
-    insert_graph_to_neo4j(all_nodes, all_rels)
 
 # 从数据库中提取内容
 content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
@@ -171,7 +172,9 @@ with scoped_session() as conn:
         if content:
             contents.append(content)
 
-batch_process_contents(contents)
-
+contents_str="\n".join(contents)
+chunks= split_text_into_chunks(contents_str, 4096)
+for chunk in chunks:
+    extract_and_store_graph(chunk)
 # 关闭 Neo4j 驱动
 neo4j_driver.close()
