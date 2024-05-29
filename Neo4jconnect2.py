@@ -26,8 +26,7 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
-os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
+os.environ["NEO4J_PASSWORD"] = "skf707=="
 
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
@@ -100,35 +99,47 @@ from typing import List
 
 def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
     with neo4j_driver.session() as session:
-        # Insert nodes
+        # 插入节点并检查重复
         for node in nodes:
             node_props = {prop.key: prop.value for prop in (node.properties or [])}
-            prop_str = ", ".join([f"{k}: ${k}" for k in node_props.keys()])
-            node_type = node.type.replace(" ", "_")  # Replace spaces with underscores
+            prop_str = ", ".join([f"n.{k} = ${k}" for k in node_props.keys()])
+            node_type = node.type.replace(" ", "_")  # 用下划线替换空格
             if prop_str:
-                query = f"CREATE (n:{node_type} {{id: $id, {prop_str}}})"
+                query = (
+                    f"MERGE (n:{node_type} {{id: $id}}) "
+                    f"ON CREATE SET {prop_str} "
+                    f"ON MATCH SET {prop_str}"
+                )
             else:
-                query = f"CREATE (n:{node_type} {{id: $id}})"
-            session.run(query, id=node.id, **node_props)
+                query = (
+                    f"MERGE (n:{node_type} {{id: $id}})"
+                )
+            params = {"id": node.id, **node_props}
+            session.run(query, params)
 
-        # Insert relationships
+        # 插入关系并检查重复
         for rel in rels:
             source_id = rel.source.id
             target_id = rel.target.id
             rel_props = {prop.key: prop.value for prop in (rel.properties or [])}
-            rel_prop_str = ", ".join([f"{k}: ${k}" for k in rel_props.keys()])
-            rel_type = rel.type.replace(" ", "_")  # Replace spaces with underscores
+            rel_prop_str = ", ".join([f"r.{k} = ${k}" for k in rel_props.keys()])
+            rel_type = rel.type.replace(" ", "_")  # 用下划线替换空格
             if rel_prop_str:
                 query = (
                     "MATCH (a {id: $source_id}), (b {id: $target_id}) "
-                    f"CREATE (a)-[:{rel_type} {{ {rel_prop_str} }}]->(b)"
+                    f"MERGE (a)-[r:{rel_type}]->(b) "
+                    f"ON CREATE SET {rel_prop_str} "
+                    f"ON MATCH SET {rel_prop_str}"
                 )
             else:
                 query = (
                     "MATCH (a {id: $source_id}), (b {id: $target_id}) "
-                    f"CREATE (a)-[:{rel_type}]->(b)"
+                    f"MERGE (a)-[r:{rel_type}]->(b)"
                 )
-            session.run(query, source_id=source_id, target_id=target_id, **rel_props)
+            params = {"source_id": source_id, "target_id": target_id, **rel_props}
+            session.run(query, params)
+
+
 
 
 
