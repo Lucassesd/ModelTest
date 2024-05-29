@@ -10,8 +10,10 @@ You are a top-tier algorithm designed for extracting information in structured f
 - **Consistency**: Ensure you use basic or elementary types for node labels.
   - For example, when you identify an entity representing a person, always label it as **"person"**. Avoid using more specific terms like "mathematician" or "scientist".
 - **Node IDs**: Never utilize integers as node IDs. Node IDs should be names or human-readable identifiers found in the text.
-## 3. Handling Numerical Data and Dates
+## 3. Handling Numerical Data and Dates and Code
+- The code should be incorporated as attributes or properties of the respective nodes.
 - Numerical data, like age or other related information, should be incorporated as attributes or properties of the respective nodes.
+- **The code must be strongly related to the node**:Do not create separate nodes for code. Always attach them as attributes or properties of nodes.
 - **No Separate Nodes for Dates/Numbers**: Do not create separate nodes for dates or numerical values. Always attach them as attributes or properties of nodes.
 - **Property Format**: Properties must be in a key-value format.
 - **Contetnt Format**: The main content is contained in the "Content", don't write all of it in the "id".

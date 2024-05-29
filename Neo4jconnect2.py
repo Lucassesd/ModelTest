@@ -10,9 +10,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from templates2 import prompt
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
-from langchain_text_splitters import (
-    RecursiveCharacterTextSplitter,
-)
 from langchain.graphs.graph_document import (
     Node as BaseNode,
     Relationship as BaseRelationship
@@ -141,8 +138,6 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
 
 
 
-
-
 def split_text_into_chunks(text: str, chunk_size: int) -> List[str]:
     chunks = []
     for i in range(0, len(text), chunk_size):
@@ -168,7 +163,6 @@ def extract_and_store_graph(content) -> None:
     else:
         print("Data extraction failed")
         
-
 
 # 删除所有节点和关系
 delete_all_nodes()
