@@ -1,3 +1,4 @@
+import re
 import os
 from neo4j import GraphDatabase
 from sqlalchemy import create_engine
@@ -23,7 +24,7 @@ from langchain_community.graphs import Neo4jGraph
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "skf707=="
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 AI_KEY = "sk-Swi6dHHVWDY342vVaCwFLwmguz6YXfVlSXAfNxzukMtsScfP"
 AI_URL = "https://api.chatanywhere.tech/v1"
@@ -96,11 +97,11 @@ from typing import List
 
 def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
     with neo4j_driver.session() as session:
-        # 插入节点并检查重复
+        # Insert nodes and check for duplicates
         for node in nodes:
             node_props = {prop.key: prop.value for prop in (node.properties or [])}
             prop_str = ", ".join([f"n.{k} = ${k}" for k in node_props.keys()])
-            node_type = node.type.replace(" ", "_")  # 用下划线替换空格
+            node_type = node.type.replace(" ", "_").replace("-", "_")  # Replace invalid characters
             if prop_str:
                 query = (
                     f"MERGE (n:{node_type} {{id: $id}}) "
@@ -114,13 +115,13 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
             params = {"id": node.id, **node_props}
             session.run(query, params)
 
-        # 插入关系并检查重复
+        # Insert relationships and check for duplicates
         for rel in rels:
             source_id = rel.source.id
             target_id = rel.target.id
             rel_props = {prop.key: prop.value for prop in (rel.properties or [])}
             rel_prop_str = ", ".join([f"r.{k} = ${k}" for k in rel_props.keys()])
-            rel_type = rel.type.replace(" ", "_")  # 用下划线替换空格
+            rel_type = rel.type.replace(" ", "_").replace("-", "_")  # Replace invalid characters
             if rel_prop_str:
                 query = (
                     "MATCH (a {id: $source_id}), (b {id: $target_id}) "
@@ -135,14 +136,57 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
                 )
             params = {"source_id": source_id, "target_id": target_id, **rel_props}
             session.run(query, params)
+class TextSplitter:
+    
+    @staticmethod
+    def split_text_into_chunks(text: str, chunk_size: int, mode: str = 'sentence') -> List[str]:
+        if mode == 'sentence':
+            return TextSplitter._split_by_sentence(text, chunk_size)
+        elif mode == 'paragraph':
+            return TextSplitter._split_by_paragraph(text, chunk_size)
+        else:
+            raise ValueError("Mode must be either 'sentence' or 'paragraph'.")
 
+    @staticmethod
+    def _split_by_sentence(text: str, chunk_size: int) -> List[str]:
+        sentences = re.split(r'(?<=[。！？])', text)  # 匹配中文句号、叹号和问号作为句子边界
+        chunks = []
+        current_chunk = ""
+        
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) <= chunk_size:
+                current_chunk += sentence
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = sentence
+        
+        if current_chunk:  # 添加最后一个块
+            chunks.append(current_chunk)
+        
+        return chunks
+    
+    @staticmethod
+    def _split_by_paragraph(text: str, chunk_size: int) -> List[str]:
+        paragraphs = text.split('\n\n')
+        chunks = []
+        current_chunk = ""
+        
+        for paragraph in paragraphs:
+            if len(current_chunk) + len(paragraph) + 2 <= chunk_size:  # 加2是因为加入段落后会再加两个换行符
+                if current_chunk:
+                    current_chunk += '\n\n'
+                current_chunk += paragraph
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = paragraph
+        
+        if current_chunk:  # 添加最后一个块
+            chunks.append(current_chunk)
+        
+        return chunks
 
-
-def split_text_into_chunks(text: str, chunk_size: int) -> List[str]:
-    chunks = []
-    for i in range(0, len(text), chunk_size):
-        chunks.append(text[i:i+chunk_size])
-    return chunks
 
 def delete_all_nodes():
     with neo4j_driver.session() as session:
@@ -178,7 +222,7 @@ with scoped_session() as conn:
             contents.append(content)
 
 contents_str="\n".join(contents)
-chunks= split_text_into_chunks(contents_str, 4096)
+chunks= TextSplitter.split_text_into_chunks(contents_str, 10000, mode='paragraph')
 for chunk in chunks:
     extract_and_store_graph(chunk)
 # 关闭 Neo4j 驱动
