@@ -58,11 +58,11 @@ class Property(BaseModel):
 
 class Node(BaseNode):
     properties: Optional[List[Property]] = Field(
-        None, description="List of node properties")
+        ..., description="List of node properties")
 
 class Relationship(BaseRelationship):
     properties: Optional[List[Property]] = Field(
-        None, description="List of relationship properties"
+        ..., description="List of relationship properties"
     )
 
 class KnowledgeGraph(BaseModel):
@@ -151,6 +151,7 @@ def split_text_into_chunks_with_overlap(text: str, chunk_size: int, overlap: int
 def delete_all_nodes():
     with neo4j_driver.session() as session:
         session.run("MATCH (n) DETACH DELETE n")
+        
 
 def extract_and_store_graph(content) -> None:
     # Extract graph data using OpenAI functions
@@ -182,7 +183,7 @@ with scoped_session() as conn:
             contents.append(content)
 
 contents_str="\n".join(contents)
-chunks= split_text_into_chunks_with_overlap(contents_str, 10000, 100)
+chunks= split_text_into_chunks_with_overlap(contents_str, 4096, 100)
 for chunk in chunks:
     extract_and_store_graph(chunk)
 # 关闭 Neo4j 驱动
