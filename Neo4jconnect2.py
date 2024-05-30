@@ -11,6 +11,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from templates2 import prompt
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,
+)
 from langchain.graphs.graph_document import (
     Node as BaseNode,
     Relationship as BaseRelationship
@@ -58,11 +61,11 @@ class Property(BaseModel):
 
 class Node(BaseNode):
     properties: Optional[List[Property]] = Field(
-        ..., description="List of node properties")
+        None, description="List of node properties")
 
 class Relationship(BaseRelationship):
     properties: Optional[List[Property]] = Field(
-        ..., description="List of relationship properties"
+        None, description="List of relationship properties"
     )
 
 class KnowledgeGraph(BaseModel):
@@ -97,11 +100,11 @@ from typing import List
 
 def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
     with neo4j_driver.session() as session:
-        # Insert nodes and check for duplicates
+        # 插入节点并检查重复
         for node in nodes:
             node_props = {prop.key: prop.value for prop in (node.properties or [])}
-            prop_str = ", ".join([f"n.{k} = ${k}" for k in node_props.keys()])
-            node_type = node.type.replace(" ", "_").replace("-", "_")  # Replace invalid characters
+            prop_str = ", ".join([f"n.`{k}` = ${k}" for k in node_props.keys()])
+            node_type = node.type.replace(" ", "_")  # 用下划线替换空格
             if prop_str:
                 query = (
                     f"MERGE (n:{node_type} {{id: $id}}) "
@@ -115,13 +118,13 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
             params = {"id": node.id, **node_props}
             session.run(query, params)
 
-        # Insert relationships and check for duplicates
+        # 插入关系并检查重复
         for rel in rels:
             source_id = rel.source.id
             target_id = rel.target.id
             rel_props = {prop.key: prop.value for prop in (rel.properties or [])}
-            rel_prop_str = ", ".join([f"r.{k} = ${k}" for k in rel_props.keys()])
-            rel_type = rel.type.replace(" ", "_").replace("-", "_")  # Replace invalid characters
+            rel_prop_str = ", ".join([f"r.`{k}` = ${k}" for k in rel_props.keys()])
+            rel_type = rel.type.replace(" ", "_")  # 用下划线替换空格
             if rel_prop_str:
                 query = (
                     "MATCH (a {id: $source_id}), (b {id: $target_id}) "
@@ -136,27 +139,25 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
                 )
             params = {"source_id": source_id, "target_id": target_id, **rel_props}
             session.run(query, params)
-def split_text_into_chunks_with_overlap(text: str, chunk_size: int, overlap: int) -> List[str]:
+
+
+
+
+
+def split_text_into_chunks(text: str, chunk_size: int) -> List[str]:
     chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += chunk_size - overlap
-
+    for i in range(0, len(text), chunk_size):
+        chunks.append(text[i:i+chunk_size])
     return chunks
-
 
 def delete_all_nodes():
     with neo4j_driver.session() as session:
         session.run("MATCH (n) DETACH DELETE n")
-        
 
-def extract_and_store_graph(content) -> None:
+def extract_and_store_graph(content,code) -> None:
     # Extract graph data using OpenAI functions
     extract_chain = create_structured_output_runnable(KnowledgeGraph, llm, prompt_graph)
-    data = extract_chain.invoke({"input": content})
+    data = extract_chain.invoke({"input": content, "code": code})
 
     # Assuming data is an instance of KnowledgeGraph
     if isinstance(data, KnowledgeGraph):
@@ -168,6 +169,22 @@ def extract_and_store_graph(content) -> None:
     else:
         print("Data extraction failed")
         
+def extract_code_blocks(markdown_text):
+    code_blocks = re.findall(r'```(.*?)```', markdown_text, re.DOTALL)
+    return code_blocks
+
+def format_code_blocks(code_blocks):
+    formatted_blocks = []
+    for block in code_blocks:
+        # Split the block into lines and strip leading/trailing whitespace
+        lines = block.split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+        
+        # Add back the code block markers and join the lines with newlines
+        formatted_block = '```\n' + '\n'.join(lines) + '\n```'
+        formatted_blocks.append(formatted_block)
+    
+    return '\n\n'.join(formatted_blocks)
 
 # 删除所有节点和关系
 delete_all_nodes()
@@ -183,8 +200,8 @@ with scoped_session() as conn:
             contents.append(content)
 
 contents_str="\n".join(contents)
-chunks= split_text_into_chunks_with_overlap(contents_str, 4096, 100)
-for chunk in chunks:
-    extract_and_store_graph(chunk)
-# 关闭 Neo4j 驱动
+code=extract_code_blocks(contents_str)
+formatted_code = format_code_blocks(code)
+extract_and_store_graph(contents_str,code)
+# # 关闭 Neo4j 驱动
 neo4j_driver.close()
