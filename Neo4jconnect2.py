@@ -136,56 +136,16 @@ def insert_graph_to_neo4j(nodes: List[Node], rels: List[Relationship]):
                 )
             params = {"source_id": source_id, "target_id": target_id, **rel_props}
             session.run(query, params)
-class TextSplitter:
-    
-    @staticmethod
-    def split_text_into_chunks(text: str, chunk_size: int, mode: str = 'sentence') -> List[str]:
-        if mode == 'sentence':
-            return TextSplitter._split_by_sentence(text, chunk_size)
-        elif mode == 'paragraph':
-            return TextSplitter._split_by_paragraph(text, chunk_size)
-        else:
-            raise ValueError("Mode must be either 'sentence' or 'paragraph'.")
+def split_text_into_chunks_with_overlap(text: str, chunk_size: int, overlap: int) -> List[str]:
+    chunks = []
+    start = 0
 
-    @staticmethod
-    def _split_by_sentence(text: str, chunk_size: int) -> List[str]:
-        sentences = re.split(r'(?<=[。！？])', text)  # 匹配中文句号、叹号和问号作为句子边界
-        chunks = []
-        current_chunk = ""
-        
-        for sentence in sentences:
-            if len(current_chunk) + len(sentence) <= chunk_size:
-                current_chunk += sentence
-            else:
-                if current_chunk:
-                    chunks.append(current_chunk)
-                current_chunk = sentence
-        
-        if current_chunk:  # 添加最后一个块
-            chunks.append(current_chunk)
-        
-        return chunks
-    
-    @staticmethod
-    def _split_by_paragraph(text: str, chunk_size: int) -> List[str]:
-        paragraphs = text.split('\n\n')
-        chunks = []
-        current_chunk = ""
-        
-        for paragraph in paragraphs:
-            if len(current_chunk) + len(paragraph) + 2 <= chunk_size:  # 加2是因为加入段落后会再加两个换行符
-                if current_chunk:
-                    current_chunk += '\n\n'
-                current_chunk += paragraph
-            else:
-                if current_chunk:
-                    chunks.append(current_chunk)
-                current_chunk = paragraph
-        
-        if current_chunk:  # 添加最后一个块
-            chunks.append(current_chunk)
-        
-        return chunks
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+
+    return chunks
 
 
 def delete_all_nodes():
@@ -222,7 +182,7 @@ with scoped_session() as conn:
             contents.append(content)
 
 contents_str="\n".join(contents)
-chunks= TextSplitter.split_text_into_chunks(contents_str, 10000, mode='paragraph')
+chunks= split_text_into_chunks_with_overlap(contents_str, 10000, 100)
 for chunk in chunks:
     extract_and_store_graph(chunk)
 # 关闭 Neo4j 驱动
