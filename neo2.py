@@ -138,14 +138,14 @@ class Entities(BaseModel):
 
     names: List[str] = Field(
         ...,
-        description="All the person, organization, or business entities that appear in the text",
+        description="All the verb, noun or business entities that appear in the text",
     )
 
 prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are extracting organization and person entities from the text.",
+            "You are extracting noun and verb entities from the text.",
         ),
         (
             "human",
@@ -271,4 +271,4 @@ chain = (
     | StrOutputParser()
 )
 
-print(chain.invoke({"question": "How many person are there in graph?"}))
+print(chain.invoke({"question": "如何使用市场中的知识库？"}))
