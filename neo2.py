@@ -64,7 +64,7 @@ from langchain.text_splitter import TokenTextSplitter
 api_key=OPENAI_API_KEY
 api_url=OPENAI_API_BASE
 
-graph=Neo4jGraph
+graph=Neo4jGraph()
 
 engine = create_engine(DATABASE, echo=True)
 Session = sessionmaker(bind=engine)
