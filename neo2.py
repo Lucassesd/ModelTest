@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from models.passage import Passage
 from config import(
     NEO4J_URI,
@@ -31,7 +32,6 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from typing import Tuple
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
-import os
 from langchain_community.graphs import Neo4jGraph
 from langchain.text_splitter import TokenTextSplitter
 from langchain_openai import ChatOpenAI
@@ -41,8 +41,6 @@ from langchain_community.vectorstores import Neo4jVector
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores.neo4j_vector import remove_lucene_chars
 from langchain_core.runnables import  RunnableParallel, RunnablePassthrough
-import re
-import os
 from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -256,29 +254,29 @@ chain_grade = (
 
 
 file_path="fibona-drop rag测试集.json"
-# try:
-#     with open(file_path, 'r', encoding='utf-8') as file:
-#         data = json.load(file)
+try:
+    with open(file_path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
 
-#     for item in data:
-#         question = item["question"]
-#         expected_result = item["expected_result"]
+    for item in data:
+        question = item["question"]
+        expected_result = item["expected_result"]
         
-#         coll_result = chain_search.invoke({"question": question})
+        coll_result = chain_search.invoke({"question": question})
         
-#         grade_result = chain_grade.invoke({"expected_result": expected_result, "coll_result": coll_result})
+        grade_result = chain_grade.invoke({"expected_result": expected_result, "coll_result": coll_result})
         
-#         print(f"Question: {question}")
-#         print(f"Collected Result: {coll_result}")
-#         print(f"Grade Result: {grade_result}")
-#         print("\n" + "-"*50 + "\n")
+        print(f"Question: {question}")
+        print(f"Collected Result: {coll_result}")
+        print(f"Grade Result: {grade_result}")
+        print("\n" + "-"*50 + "\n")
 
-# except UnicodeDecodeError as e:
-#     print(f"Unicode decoding error: {e}")
-# except json.JSONDecodeError as e:
-#     print(f"JSON decoding error: {e}")
-# except Exception as e:
-#     print(f"An unexpected error occurred: {e}")
-coll_result = chain_search.invoke({"question":"如何使用市场中的知识库?"})
-grade_result = chain_grade.invoke({"expected_result":"在知识库聊天界面，点击右上角 **“市场”** 按钮即可进入知识库市场弹窗，在这里你可以对知识库进行点收藏，收藏后使用知识库进行聊天，并且在提示词时可供绑定。", "coll_result": coll_result})
-print(coll_result,"\n\n",grade_result)
+except UnicodeDecodeError as e:
+    print(f"Unicode decoding error: {e}")
+except json.JSONDecodeError as e:
+    print(f"JSON decoding error: {e}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+# coll_result = chain_search.invoke({"question":"如何使用市场中的知识库?"})
+# grade_result = chain_grade.invoke({"expected_result":"在知识库聊天界面，点击右上角 **“市场”** 按钮即可进入知识库市场弹窗，在这里你可以对知识库进行点收藏，收藏后使用知识库进行聊天，并且在提示词时可供绑定。", "coll_result": coll_result})
+# print(coll_result,"\n\n",grade_result)
