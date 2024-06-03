@@ -42,7 +42,6 @@ from models.passage import Passage
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from templates2 import prompt
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
@@ -61,7 +60,7 @@ from langchain.text_splitter import TokenTextSplitter
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "skf707=="
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 graph = Neo4jGraph()
 
@@ -85,6 +84,7 @@ if model_name == "GPT3":
 elif model_name == "GPT4":
     llm = ChatOpenAI(model="gpt-4", temperature=0)
 llm_transformer = LLMGraphTransformer(llm=llm)
+
 vector_index = Neo4jVector.from_existing_graph( 
     OpenAIEmbeddings(),
     search_type="hybrid",
@@ -101,15 +101,6 @@ def scoped_session():
         finally:
             db_session.close() 
             
-content_ids = input("Input the IDs of the content (separate IDs by space): ").strip().split()
-contents = []
-with scoped_session() as conn:
-    for content_id in content_ids:
-        result = conn.query(Passage.content).offset(int(content_id) - 1).limit(1).all()
-        content = result[0][0] if result else None
-        if content:
-            contents.append(content)
-
 
 class Entities(BaseModel):
     """Identifying information about entities."""
