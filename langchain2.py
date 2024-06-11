@@ -25,7 +25,7 @@ AI_URL = "https://api.chatanywhere.tech/v1"
 os.environ["OPENAI_API_KEY"] = AI_KEY
 os.environ["OPENAI_API_BASE"] = AI_URL
 
-engine = create_engine("mysql+pymysql://root:root@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
+engine = create_engine("mysql+pymysql://root:Sztu2024!@nj-cdb-ejzzmfxj.sql.tencentcdb.com:63911/crawler", echo=True)
 Session = sessionmaker(bind=engine)
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-16k", temperature=0)

@@ -62,7 +62,7 @@ from langchain.text_splitter import TokenTextSplitter
 
 os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
-os.environ["NEO4J_PASSWORD"] = "skf707=="
+os.environ["NEO4J_PASSWORD"] = "Sztu2024!"
 
 graph = Neo4jGraph()
 
@@ -135,7 +135,7 @@ def generate_full_text_query(input: str) -> str:
     return full_text_query.strip()
 
 def structured_retriever(question: str) -> str:
-    """
+    """ 
     Collects the neighborhood of entities mentioned
     in the question
     """
@@ -221,29 +221,29 @@ chain_grade = (
 
 
 file_path="fibona-drop rag测试集.json"
-# try:
-#     with open(file_path, 'r', encoding='utf-8') as file:
-#         data = json.load(file)
+try:
+    with open(file_path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
 
-#     for item in data:
-#         question = item["question"]
-#         expected_result = item["expected_result"]
+    for item in data:
+        question = item["question"]
+        expected_result = item["expected_result"]
         
-#         coll_result = chain_search.invoke({"question": question})
+        coll_result = chain_search.invoke({"question": question})
         
-#         grade_result = chain_grade.invoke({"expected_result": expected_result, "coll_result": coll_result})
+        grade_result = chain_grade.invoke({"expected_result": expected_result, "coll_result": coll_result})
         
-#         print(f"Question: {question}")
-#         print(f"Collected Result: {coll_result}")
-#         print(f"Grade Result: {grade_result}")
-#         print("\n" + "-"*50 + "\n")
+        print(f"Question: {question}")
+        print(f"Collected Result: {coll_result}")
+        print(f"Grade Result: {grade_result}")
+        print("\n" + "-"*50 + "\n")
 
-# except UnicodeDecodeError as e:
-#     print(f"Unicode decoding error: {e}")
-# except json.JSONDecodeError as e:
-#     print(f"JSON decoding error: {e}")
-# except Exception as e:
-#     print(f"An unexpected error occurred: {e}")
+except UnicodeDecodeError as e:
+    print(f"Unicode decoding error: {e}")
+except json.JSONDecodeError as e:
+    print(f"JSON decoding error: {e}")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
 coll_result = chain_search.invoke({"question":"如何使用本地pdf文件新建知识库?"})
 grade_result = chain_grade.invoke({"expected_result":"在知识库聊天界面，点击右上角 **“市场”** 按钮即可进入知识库市场弹窗，在这里你可以对知识库进行点收藏，收藏后使用知识库进行聊天，并且在提示词时可供绑定。", "coll_result": coll_result})
 print(coll_result,"\n\n",grade_result)
